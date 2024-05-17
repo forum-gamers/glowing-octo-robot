@@ -1,0 +1,34 @@
+syntax = "proto3";
+
+package transaction;
+
+option go_package = "./generated/transaction";
+
+message Transaction {
+  string id = 1;
+  string userId = 2;
+  double amount = 3;
+  string type = 4;
+  string currency = 5;
+  string status = 6;
+  string transactionDate = 7;
+  string description = 8;
+  string detail = 9;
+  string createdAt = 10;
+  string updatedAt = 11;
+  double discount = 12;
+}
+
+message CreateTransactionInput {
+  double amount = 1;
+  string type = 2;
+  string currency = 3;
+  string transactionDate = 4;
+  string description = 5;
+  string detail = 6;
+  double discount = 7;
+}
+
+service TransactionService {
+  rpc CreateTransaction(CreateTransactionInput) returns (Transaction) {}
+}

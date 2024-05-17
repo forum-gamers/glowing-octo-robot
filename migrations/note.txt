@@ -1,0 +1,8 @@
+to run this project on local
+- install golang-migrate first -> go get -tags 'postgres' -u github.com/golang-migrate/migrate/cmd/migrate
+- export path
+
+run script `migrate -source file://migrations -database {connection_url} up`
+                                                                ^
+                                                                |
+                                postgres://apple:password@localhost:5432/forum-gamers-transaction?sslmode=disable
