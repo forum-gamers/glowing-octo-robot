@@ -8,9 +8,11 @@ import (
 	c "github.com/forum-gamers/glowing-octo-robot/controllers"
 	"github.com/forum-gamers/glowing-octo-robot/database"
 	transactionProto "github.com/forum-gamers/glowing-octo-robot/generated/transaction"
+	walletProto "github.com/forum-gamers/glowing-octo-robot/generated/wallet"
 	h "github.com/forum-gamers/glowing-octo-robot/helpers"
 	"github.com/forum-gamers/glowing-octo-robot/interceptor"
 	"github.com/forum-gamers/glowing-octo-robot/pkg/transaction"
+	"github.com/forum-gamers/glowing-octo-robot/pkg/wallet"
 	"github.com/joho/godotenv"
 	"google.golang.org/grpc"
 )
@@ -30,6 +32,7 @@ func main() {
 	}
 
 	transactionRepo := transaction.NewTransactionRepo()
+	walletRepo := wallet.NewWalletRepo()
 
 	interceptor := interceptor.NewInterCeptor()
 	getUser := interceptor.GetUserFromCtx
@@ -40,6 +43,11 @@ func main() {
 	transactionProto.RegisterTransactionServiceServer(grpcServer, &c.TransactionService{
 		GetUser:         getUser,
 		TransactionRepo: transactionRepo,
+	})
+
+	walletProto.RegisterWalletServiceServer(grpcServer, &c.WalletService{
+		GetUser:    getUser,
+		WalletRepo: walletRepo,
 	})
 
 	log.Printf("Starting to serve in port : %s", addr)

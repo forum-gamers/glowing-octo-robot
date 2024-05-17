@@ -1,0 +1,20 @@
+syntax = "proto3";
+
+package wallet;
+
+option go_package = "./generated/wallet";
+
+message Wallet {
+  string id = 1;
+  string userId = 2;
+  double balance = 3;
+  double coin = 4;
+  string createdAt = 5;
+  string updatedAt = 6;
+}
+
+message NoArgument{}
+
+service WalletService { 
+  rpc CreateWallet(NoArgument) returns (Wallet) {}
+}
