@@ -87,3 +87,51 @@ func (s *TransactionService) CreateTransaction(
 		UpdatedAt:       payload.UpdatedAt.String(),
 	}, nil
 }
+
+func (s *TransactionService) CancelTransaction(
+	ctx context.Context,
+	in *protobuf.TransactionIdInput,
+) (*protobuf.Transaction, error) {
+	if in.Id == "" {
+		return nil, status.Error(codes.InvalidArgument, "transaction id is required")
+	}
+
+	if !h.IsValidUUID(in.Id) {
+		return nil, status.Error(codes.InvalidArgument, "invalid id")
+	}
+
+	data, err := s.TransactionRepo.FindById(ctx, in.Id)
+	if err != nil {
+		return nil, err
+	}
+
+	switch data.Status {
+	case transaction.COMPLETED:
+		return nil, status.Error(codes.FailedPrecondition, "transaction is already completed")
+	case transaction.FAILED:
+		return nil, status.Error(codes.FailedPrecondition, "transaction is failed")
+	case transaction.CANCEL:
+		return nil, status.Error(codes.FailedPrecondition, "transaction is already canceled")
+	default:
+		break
+	}
+
+	if err := s.TransactionRepo.UpdateTransactionStatus(ctx, data.Id, transaction.CANCEL); err != nil {
+		return nil, err
+	}
+
+	return &protobuf.Transaction{
+		Id:              data.Id,
+		UserId:          data.UserId,
+		Amount:          data.Amount,
+		Type:            data.Type,
+		Currency:        data.Currency,
+		Status:          transaction.CANCEL,
+		TransactionDate: data.TransactionDate.String(),
+		Description:     data.Description,
+		Discount:        data.Discount,
+		Detail:          data.Detail,
+		CreatedAt:       data.CreatedAt.String(),
+		UpdatedAt:       data.UpdatedAt.String(),
+	}, nil
+}

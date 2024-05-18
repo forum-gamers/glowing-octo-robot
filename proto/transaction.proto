@@ -29,6 +29,11 @@ message CreateTransactionInput {
   double discount = 7;
 }
 
+message TransactionIdInput {
+  string id = 1;
+}
+
 service TransactionService {
   rpc CreateTransaction(CreateTransactionInput) returns (Transaction) {}
+  rpc CancelTransaction(TransactionIdInput) returns (Transaction) {}
 }

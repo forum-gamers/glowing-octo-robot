@@ -6,6 +6,8 @@ import (
 
 	cons "github.com/forum-gamers/glowing-octo-robot/constants"
 	"github.com/forum-gamers/glowing-octo-robot/database"
+	h "github.com/forum-gamers/glowing-octo-robot/helpers"
+	"google.golang.org/grpc/codes"
 )
 
 func NewTransactionRepo() TransactionRepo {
@@ -22,4 +24,40 @@ func (r *TransactionRepoImpl) Create(ctx context.Context, data *Transaction) err
 		data.UserId, data.Amount, data.Type, data.Currency, data.Status, data.TransactionDate,
 		data.Description, data.Detail, data.Discount, data.CreatedAt, data.UpdatedAt,
 	).Scan(&data.Id)
+}
+
+func (r *TransactionRepoImpl) FindById(ctx context.Context, id string) (result Transaction, err error) {
+	rows, err := r.Db.QueryContext(
+		ctx,
+		fmt.Sprintf(`SELECT * FROM %s WHERE id = $1`, cons.TRANSACTION),
+		id,
+	)
+	if err != nil {
+		return
+	}
+	defer rows.Close()
+
+	for rows.Next() {
+		if err = rows.Scan(
+			&result.Id, &result.UserId, &result.Amount, &result.Type, &result.Currency, &result.Status,
+			&result.TransactionDate, &result.Description, &result.Detail, &result.Discount, &result.CreatedAt, &result.UpdatedAt,
+		); err != nil {
+			return
+		}
+	}
+
+	if result.Id == "" {
+		err = h.NewAppError(codes.InvalidArgument, "data not found")
+		return
+	}
+	return
+}
+
+func (r *TransactionRepoImpl) UpdateTransactionStatus(ctx context.Context, id string, status TransactionStatus) error {
+	_, err := r.Db.ExecContext(
+		ctx,
+		fmt.Sprintf(`UPDATE %s SET status = $1, updatedAt = NOW() WHERE id = $2`, cons.TRANSACTION),
+		status, id,
+	)
+	return err
 }

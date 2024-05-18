@@ -7,6 +7,8 @@ import (
 
 type TransactionRepo interface {
 	Create(ctx context.Context, data *Transaction) error
+	FindById(ctx context.Context, id string) (Transaction, error)
+	UpdateTransactionStatus(ctx context.Context, id string, status TransactionStatus) error
 }
 
 type TransactionRepoImpl struct{ Db *sql.DB }
@@ -14,9 +16,14 @@ type TransactionRepoImpl struct{ Db *sql.DB }
 type TransactionStatus = string
 
 const (
-	PENDING   TransactionStatus = "pending"
-	COMPLETED TransactionStatus = "completed"
-	FAILED    TransactionStatus = "failed"
+	PENDING    TransactionStatus = "pending"
+	COMPLETED  TransactionStatus = "completed"
+	FAILED     TransactionStatus = "failed"
+	CANCEL     TransactionStatus = "cancel"
+	REFUND     TransactionStatus = "refund"
+	SETTLEMENT TransactionStatus = "settlement"
+	DENY       TransactionStatus = "deny"
+	EXPIRE     TransactionStatus = "expire"
 )
 
 type TransactionCurrency = string
