@@ -9,6 +9,7 @@ type TransactionRepo interface {
 	Create(ctx context.Context, data *Transaction) error
 	FindById(ctx context.Context, id string) (Transaction, error)
 	UpdateTransactionStatus(ctx context.Context, id string, status TransactionStatus) error
+	FindOneBySignature(ctx context.Context, signature string) (Transaction, error)
 }
 
 type TransactionRepoImpl struct{ Db *sql.DB }

@@ -141,3 +141,34 @@ func (s *TransactionService) CancelTransaction(
 		ItemId:          data.ItemId,
 	}, nil
 }
+
+func (s *TransactionService) FindOneBySignature(
+	ctx context.Context,
+	in *protobuf.SignatureInput,
+) (*protobuf.Transaction, error) {
+	if in.Signature == "" {
+		return nil, status.Error(codes.InvalidArgument, "signature is required")
+	}
+
+	data, err := s.TransactionRepo.FindOneBySignature(ctx, in.Signature)
+	if err != nil {
+		return nil, err
+	}
+
+	return &protobuf.Transaction{
+		Id:              data.Id,
+		UserId:          data.UserId,
+		Amount:          data.Amount,
+		Type:            data.Type,
+		Currency:        data.Currency,
+		Status:          data.Status,
+		TransactionDate: data.TransactionDate.String(),
+		Description:     data.Description,
+		Discount:        data.Discount,
+		Detail:          data.Detail,
+		CreatedAt:       data.CreatedAt.String(),
+		UpdatedAt:       data.UpdatedAt.String(),
+		Signature:       data.Signature,
+		ItemId:          data.ItemId,
+	}, nil
+}

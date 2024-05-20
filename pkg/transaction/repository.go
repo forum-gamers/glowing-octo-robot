@@ -66,3 +66,36 @@ func (r *TransactionRepoImpl) UpdateTransactionStatus(ctx context.Context, id st
 	)
 	return err
 }
+
+func (r *TransactionRepoImpl) FindOneBySignature(ctx context.Context, signature string) (result Transaction, err error) {
+	rows, err := r.Db.QueryContext(
+		ctx,
+		fmt.Sprintf(`
+		SELECT 
+		id, userId, amount, type, currency, status, transactionDate, 
+		description, discount, detail, signature, itemId, createdAt, updatedAt 
+		FROM %s
+		WHERE signature = $1
+		`, cons.TRANSACTION),
+		signature,
+	)
+	if err != nil {
+		return
+	}
+	defer rows.Close()
+
+	for rows.Next() {
+		if err = rows.Scan(
+			&result.Id, &result.UserId, &result.Amount, &result.Type, &result.Currency, &result.Status, &result.TransactionDate,
+			&result.Description, &result.Discount, &result.Detail, &result.Signature, &result.ItemId, &result.CreatedAt, &result.UpdatedAt,
+		); err != nil {
+			return
+		}
+	}
+
+	if result.Id == "" {
+		err = h.NewAppError(codes.InvalidArgument, "data not found")
+		return
+	}
+	return
+}
