@@ -18,18 +18,23 @@ func (r *TransactionRepoImpl) Create(ctx context.Context, data *Transaction) err
 	return r.Db.QueryRowContext(
 		ctx,
 		fmt.Sprintf(`INSERT INTO %s 
-		(userId, amount, type, currency, status, transactionDate, description, detail, discount, createdAt, updatedAt)
+		(userId, amount, type, currency, status, transactionDate, description, detail, discount, signature, itemId, createdAt, updatedAt)
 		VALUES ($1, $2, $3, $4, $5, $6, $7, $8, $9, $10, $11) RETURNING id
 		`, cons.TRANSACTION),
 		data.UserId, data.Amount, data.Type, data.Currency, data.Status, data.TransactionDate,
-		data.Description, data.Detail, data.Discount, data.CreatedAt, data.UpdatedAt,
+		data.Description, data.Detail, data.Discount, data.Signature, data.ItemId, data.CreatedAt, data.UpdatedAt,
 	).Scan(&data.Id)
 }
 
 func (r *TransactionRepoImpl) FindById(ctx context.Context, id string) (result Transaction, err error) {
 	rows, err := r.Db.QueryContext(
 		ctx,
-		fmt.Sprintf(`SELECT * FROM %s WHERE id = $1`, cons.TRANSACTION),
+		fmt.Sprintf(`
+		SELECT 
+		id, userId, amount, type, currency, status, transactionDate, 
+		description, discount, detail, signature, itemId, createdAt, updatedAt 
+		FROM %s 
+		WHERE id = $1`, cons.TRANSACTION),
 		id,
 	)
 	if err != nil {
@@ -39,8 +44,8 @@ func (r *TransactionRepoImpl) FindById(ctx context.Context, id string) (result T
 
 	for rows.Next() {
 		if err = rows.Scan(
-			&result.Id, &result.UserId, &result.Amount, &result.Type, &result.Currency, &result.Status,
-			&result.TransactionDate, &result.Description, &result.Detail, &result.Discount, &result.CreatedAt, &result.UpdatedAt,
+			&result.Id, &result.UserId, &result.Amount, &result.Type, &result.Currency, &result.Status, &result.TransactionDate,
+			&result.Description, &result.Discount, &result.Detail, &result.Signature, &result.ItemId, &result.CreatedAt, &result.UpdatedAt,
 		); err != nil {
 			return
 		}

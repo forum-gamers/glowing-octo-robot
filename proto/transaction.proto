@@ -17,6 +17,8 @@ message Transaction {
   string createdAt = 10;
   string updatedAt = 11;
   double discount = 12;
+  string signature = 13;
+  string itemId = 14;
 }
 
 message CreateTransactionInput {
@@ -27,6 +29,8 @@ message CreateTransactionInput {
   string description = 5;
   string detail = 6;
   double discount = 7;
+  string signature = 8;
+  string itemId = 9;
 }
 
 message TransactionIdInput {

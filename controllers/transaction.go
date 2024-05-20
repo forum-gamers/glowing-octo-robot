@@ -67,6 +67,8 @@ func (s *TransactionService) CreateTransaction(
 		Detail:          in.Detail,
 		CreatedAt:       time.Now(),
 		UpdatedAt:       time.Now(),
+		Signature:       in.Signature,
+		ItemId:          in.ItemId,
 	}
 	if err := s.TransactionRepo.Create(ctx, &payload); err != nil {
 		return nil, err
@@ -85,6 +87,8 @@ func (s *TransactionService) CreateTransaction(
 		Detail:          payload.Detail,
 		CreatedAt:       payload.CreatedAt.String(),
 		UpdatedAt:       payload.UpdatedAt.String(),
+		Signature:       payload.Signature,
+		ItemId:          payload.ItemId,
 	}, nil
 }
 
@@ -133,5 +137,7 @@ func (s *TransactionService) CancelTransaction(
 		Detail:          data.Detail,
 		CreatedAt:       data.CreatedAt.String(),
 		UpdatedAt:       data.UpdatedAt.String(),
+		Signature:       data.Signature,
+		ItemId:          data.ItemId,
 	}, nil
 }

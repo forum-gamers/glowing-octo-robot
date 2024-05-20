@@ -12,7 +12,9 @@ type Transaction struct {
 	TransactionDate time.Time           `db:"transactionDate"`
 	Description     string              `db:"description"`
 	Discount        float64             `db:"discount"`
-	Detail          string              `db:"transaction"`
+	Detail          string              `db:"detail"`
+	Signature       string              `db:"signature"`
+	ItemId          string              `db:"itemId"`
 	CreatedAt       time.Time           `db:"createdAt"`
 	UpdatedAt       time.Time           `db:"updatedAt"`
 }
