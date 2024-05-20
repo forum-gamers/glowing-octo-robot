@@ -19,7 +19,7 @@ func (r *TransactionRepoImpl) Create(ctx context.Context, data *Transaction) err
 		ctx,
 		fmt.Sprintf(`INSERT INTO %s 
 		(userId, amount, type, currency, status, transactionDate, description, detail, discount, signature, itemId, createdAt, updatedAt)
-		VALUES ($1, $2, $3, $4, $5, $6, $7, $8, $9, $10, $11) RETURNING id
+		VALUES ($1, $2, $3, $4, $5, $6, $7, $8, $9, $10, $11, $12, $13) RETURNING id
 		`, cons.TRANSACTION),
 		data.UserId, data.Amount, data.Type, data.Currency, data.Status, data.TransactionDate,
 		data.Description, data.Detail, data.Discount, data.Signature, data.ItemId, data.CreatedAt, data.UpdatedAt,
