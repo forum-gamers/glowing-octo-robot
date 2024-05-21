@@ -2,12 +2,16 @@ package controllers
 
 import (
 	"context"
+	"database/sql"
+	"fmt"
 	"time"
 
+	cons "github.com/forum-gamers/glowing-octo-robot/constants"
 	protobuf "github.com/forum-gamers/glowing-octo-robot/generated/transaction"
 	h "github.com/forum-gamers/glowing-octo-robot/helpers"
 	"github.com/forum-gamers/glowing-octo-robot/pkg/transaction"
 	"github.com/forum-gamers/glowing-octo-robot/pkg/user"
+	"github.com/forum-gamers/glowing-octo-robot/pkg/wallet"
 	"google.golang.org/grpc/codes"
 	"google.golang.org/grpc/status"
 )
@@ -109,15 +113,8 @@ func (s *TransactionService) CancelTransaction(
 		return nil, err
 	}
 
-	switch data.Status {
-	case transaction.COMPLETED:
-		return nil, status.Error(codes.FailedPrecondition, "transaction is already completed")
-	case transaction.FAILED:
-		return nil, status.Error(codes.FailedPrecondition, "transaction is failed")
-	case transaction.CANCEL:
-		return nil, status.Error(codes.FailedPrecondition, "transaction is already canceled")
-	default:
-		break
+	if err := transaction.CheckTransactionStatus(data.Status); err != nil {
+		return nil, err
 	}
 
 	if err := s.TransactionRepo.UpdateTransactionStatus(ctx, data.Id, transaction.CANCEL); err != nil {
@@ -170,5 +167,96 @@ func (s *TransactionService) FindOneBySignature(
 		UpdatedAt:       data.UpdatedAt.String(),
 		Signature:       data.Signature,
 		ItemId:          data.ItemId,
+	}, nil
+}
+
+func (s *TransactionService) SuccessTopup(
+	ctx context.Context,
+	in *protobuf.SignatureInput,
+) (*protobuf.Wallet, error) {
+	if in.Signature == "" {
+		return nil, status.Error(codes.InvalidArgument, "signature is required")
+	}
+
+	tx, err := s.TransactionRepo.StartTransaction(ctx, nil)
+	if err != nil {
+		tx.Rollback()
+		return nil, err
+	}
+
+	var data transaction.Transaction
+	if err := tx.QueryRowContext(
+		ctx,
+		fmt.Sprintf(`
+		SELECT 
+		id, userId, amount, type, currency, status, transactionDate, 
+		description, discount, detail, signature, itemId, createdAt, updatedAt, fee
+		FROM %s
+		WHERE signature = $1 FOR UPDATE
+		`, cons.TRANSACTION),
+		in.Signature,
+	).Scan(
+		&data.Id, &data.UserId, &data.Amount, &data.Type, &data.Currency, &data.Status, &data.TransactionDate,
+		&data.Description, &data.Discount, &data.Detail, &data.Signature, &data.ItemId, &data.CreatedAt, &data.UpdatedAt, &data.Fee,
+	); err != nil {
+		if err == sql.ErrNoRows {
+			err = h.NewAppError(codes.InvalidArgument, "transaction not found")
+		}
+		tx.Rollback()
+		return nil, err
+	}
+
+	if err := transaction.CheckTransactionStatus(data.Status); err != nil {
+		return nil, err
+	}
+
+	var wallet wallet.Wallet
+	if err := tx.QueryRowContext(
+		ctx,
+		fmt.Sprintf(`
+		SELECT 
+		id, userId, balance, coin, createdAt, updatedAt 
+		FROM %s
+		WHERE userId = $1 FOR UPDATE
+		`, cons.WALLET,
+		),
+		data.UserId,
+	).Scan(
+		&wallet.Id, &wallet.UserId, &wallet.Balance, &wallet.Coin, &wallet.CreatedAt, &wallet.UpdatedAt,
+	); err != nil {
+		if err == sql.ErrNoRows {
+			err = h.NewAppError(codes.InvalidArgument, "wallet not found")
+		}
+		tx.Rollback()
+		return nil, err
+	}
+
+	if _, err := tx.ExecContext(
+		ctx,
+		fmt.Sprintf(`UPDATE %s SET status = $1, updatedAt = NOW() WHERE id = $2`, cons.TRANSACTION),
+		transaction.COMPLETED, data.Id,
+	); err != nil {
+		tx.Rollback()
+		return nil, err
+	}
+
+	updateValue := wallet.Balance + data.Amount
+	if _, err := tx.ExecContext(
+		ctx,
+		fmt.Sprintf(`UPDATE %s SET balance = $1, updatedAt = NOW() WHERE id = $2`, cons.WALLET),
+		updateValue, wallet.Id,
+	); err != nil {
+		tx.Rollback()
+		return nil, err
+	}
+
+	tx.Commit()
+	return &protobuf.Wallet{
+		Id:        wallet.Id,
+		UserId:    wallet.UserId,
+		Balance:   updateValue,
+		Coin:      wallet.Coin,
+		CreatedAt: wallet.CreatedAt.String(),
+		UpdatedAt: time.Now().String(),
 	}, nil
 }

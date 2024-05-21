@@ -10,6 +10,7 @@ type TransactionRepo interface {
 	FindById(ctx context.Context, id string) (Transaction, error)
 	UpdateTransactionStatus(ctx context.Context, id string, status TransactionStatus) error
 	FindOneBySignature(ctx context.Context, signature string) (Transaction, error)
+	StartTransaction(ctx context.Context, opts *sql.TxOptions) (*sql.Tx, error)
 }
 
 type TransactionRepoImpl struct{ Db *sql.DB }
@@ -40,3 +41,5 @@ const (
 	TOP_UP  TransactionType = "Top up"
 	PAYMENT TransactionType = "Payment"
 )
+
+type TransactionQuery = string

@@ -2,6 +2,7 @@ package transaction
 
 import (
 	"context"
+	"database/sql"
 	"fmt"
 
 	cons "github.com/forum-gamers/glowing-octo-robot/constants"
@@ -27,7 +28,7 @@ func (r *TransactionRepoImpl) Create(ctx context.Context, data *Transaction) err
 }
 
 func (r *TransactionRepoImpl) FindById(ctx context.Context, id string) (result Transaction, err error) {
-	rows, err := r.Db.QueryContext(
+	if err = r.Db.QueryRowContext(
 		ctx,
 		fmt.Sprintf(`
 		SELECT 
@@ -36,24 +37,13 @@ func (r *TransactionRepoImpl) FindById(ctx context.Context, id string) (result T
 		FROM %s 
 		WHERE id = $1`, cons.TRANSACTION),
 		id,
-	)
-	if err != nil {
-		return
-	}
-	defer rows.Close()
-
-	for rows.Next() {
-		if err = rows.Scan(
-			&result.Id, &result.UserId, &result.Amount, &result.Type, &result.Currency, &result.Status, &result.TransactionDate,
-			&result.Description, &result.Discount, &result.Detail, &result.Signature, &result.ItemId, &result.CreatedAt, &result.UpdatedAt,
-		); err != nil {
-			return
+	).Scan(
+		&result.Id, &result.UserId, &result.Amount, &result.Type, &result.Currency, &result.Status, &result.TransactionDate,
+		&result.Description, &result.Discount, &result.Detail, &result.Signature, &result.ItemId, &result.CreatedAt, &result.UpdatedAt,
+	); err != nil {
+		if err == sql.ErrNoRows {
+			err = h.NewAppError(codes.InvalidArgument, "data not found")
 		}
-	}
-
-	if result.Id == "" {
-		err = h.NewAppError(codes.InvalidArgument, "data not found")
-		return
 	}
 	return
 }
@@ -68,7 +58,7 @@ func (r *TransactionRepoImpl) UpdateTransactionStatus(ctx context.Context, id st
 }
 
 func (r *TransactionRepoImpl) FindOneBySignature(ctx context.Context, signature string) (result Transaction, err error) {
-	rows, err := r.Db.QueryContext(
+	if err = r.Db.QueryRowContext(
 		ctx,
 		fmt.Sprintf(`
 		SELECT 
@@ -78,24 +68,17 @@ func (r *TransactionRepoImpl) FindOneBySignature(ctx context.Context, signature 
 		WHERE signature = $1
 		`, cons.TRANSACTION),
 		signature,
-	)
-	if err != nil {
-		return
-	}
-	defer rows.Close()
-
-	for rows.Next() {
-		if err = rows.Scan(
-			&result.Id, &result.UserId, &result.Amount, &result.Type, &result.Currency, &result.Status, &result.TransactionDate,
-			&result.Description, &result.Discount, &result.Detail, &result.Signature, &result.ItemId, &result.CreatedAt, &result.UpdatedAt,
-		); err != nil {
-			return
+	).Scan(
+		&result.Id, &result.UserId, &result.Amount, &result.Type, &result.Currency, &result.Status, &result.TransactionDate,
+		&result.Description, &result.Discount, &result.Detail, &result.Signature, &result.ItemId, &result.CreatedAt, &result.UpdatedAt,
+	); err != nil {
+		if err == sql.ErrNoRows {
+			err = h.NewAppError(codes.InvalidArgument, "data not found")
 		}
 	}
-
-	if result.Id == "" {
-		err = h.NewAppError(codes.InvalidArgument, "data not found")
-		return
-	}
 	return
+}
+
+func (r *TransactionRepoImpl) StartTransaction(ctx context.Context, opts *sql.TxOptions) (*sql.Tx, error) {
+	return r.Db.BeginTx(ctx, opts)
 }

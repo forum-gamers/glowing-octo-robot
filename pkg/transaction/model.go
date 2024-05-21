@@ -17,4 +17,5 @@ type Transaction struct {
 	ItemId          string              `db:"itemId"`
 	CreatedAt       time.Time           `db:"createdAt"`
 	UpdatedAt       time.Time           `db:"updatedAt"`
+	Fee             float64             `db:"fee"`
 }
