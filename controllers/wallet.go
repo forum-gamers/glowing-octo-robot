@@ -47,3 +47,19 @@ func (s *WalletService) CreateWallet(ctx context.Context, in *protobuf.NoArgumen
 		UpdatedAt: wallet.UpdatedAt.String(),
 	}, nil
 }
+
+func (s *WalletService) FindMyWallet(ctx context.Context, in *protobuf.NoArgument) (*protobuf.Wallet, error) {
+	wallet, err := s.WalletRepo.FindByUserId(ctx, s.GetUser(ctx).Id)
+	if err != nil {
+		return nil, err
+	}
+
+	return &protobuf.Wallet{
+		Id:        wallet.Id,
+		UserId:    wallet.UserId,
+		Balance:   wallet.Balance,
+		Coin:      wallet.Coin,
+		CreatedAt: wallet.CreatedAt.String(),
+		UpdatedAt: wallet.UpdatedAt.String(),
+	}, nil
+}

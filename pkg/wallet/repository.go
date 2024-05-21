@@ -2,6 +2,7 @@ package wallet
 
 import (
 	"context"
+	"database/sql"
 	"fmt"
 
 	cons "github.com/forum-gamers/glowing-octo-robot/constants"
@@ -27,22 +28,14 @@ func (r *WalletRepoImpl) Create(ctx context.Context, data *Wallet) error {
 }
 
 func (r *WalletRepoImpl) FindByUserId(ctx context.Context, userId string) (data Wallet, err error) {
-	rows, err := r.Db.QueryContext(ctx, fmt.Sprintf(`SELECT * FROM %s WHERE userId = $1`, cons.WALLET), userId)
-	if err != nil {
-		return
-	}
-	defer rows.Close()
-
-	for rows.Next() {
-		if err = rows.Scan(
-			&data.Id, &data.UserId, &data.Balance, &data.Coin, &data.CreatedAt, &data.UpdatedAt,
-		); err != nil {
-			return
+	if err = r.Db.QueryRowContext(ctx, fmt.Sprintf(
+		`SELECT id, userId, balance, coin, createdAt, updatedAt FROM %s WHERE userId = $1`, cons.WALLET,
+	), userId).Scan(
+		&data.Id, &data.UserId, &data.Balance, &data.Coin, &data.CreatedAt, &data.UpdatedAt,
+	); err != nil {
+		if err == sql.ErrNoRows {
+			err = h.NewAppError(codes.NotFound, "data not found")
 		}
-	}
-
-	if data.Id == "" {
-		err = h.NewAppError(codes.NotFound, "data not found")
 		return
 	}
 	return

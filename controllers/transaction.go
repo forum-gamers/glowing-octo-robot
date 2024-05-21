@@ -73,6 +73,7 @@ func (s *TransactionService) CreateTransaction(
 		UpdatedAt:       time.Now(),
 		Signature:       in.Signature,
 		ItemId:          in.ItemId,
+		Fee:             transaction.CountFee(in.Amount, in.Type),
 	}
 	if err := s.TransactionRepo.Create(ctx, &payload); err != nil {
 		return nil, err
@@ -93,6 +94,7 @@ func (s *TransactionService) CreateTransaction(
 		UpdatedAt:       payload.UpdatedAt.String(),
 		Signature:       payload.Signature,
 		ItemId:          payload.ItemId,
+		Fee:             payload.Fee,
 	}, nil
 }
 
@@ -136,6 +138,7 @@ func (s *TransactionService) CancelTransaction(
 		UpdatedAt:       data.UpdatedAt.String(),
 		Signature:       data.Signature,
 		ItemId:          data.ItemId,
+		Fee:             data.Fee,
 	}, nil
 }
 
@@ -167,6 +170,7 @@ func (s *TransactionService) FindOneBySignature(
 		UpdatedAt:       data.UpdatedAt.String(),
 		Signature:       data.Signature,
 		ItemId:          data.ItemId,
+		Fee:             data.Fee,
 	}, nil
 }
 
@@ -207,6 +211,7 @@ func (s *TransactionService) SuccessTopup(
 	}
 
 	if err := transaction.CheckTransactionStatus(data.Status); err != nil {
+		tx.Rollback()
 		return nil, err
 	}
 
@@ -258,5 +263,53 @@ func (s *TransactionService) SuccessTopup(
 		Coin:      wallet.Coin,
 		CreatedAt: wallet.CreatedAt.String(),
 		UpdatedAt: time.Now().String(),
+	}, nil
+}
+
+func (s *TransactionService) ChangeStatusTopupTransaction(
+	ctx context.Context,
+	in *protobuf.ChangeStatusInput,
+) (*protobuf.Transaction, error) {
+	if in.Signature == "" {
+		return nil, status.Error(codes.InvalidArgument, "signature is required")
+	}
+
+	if in.Status == "" || !transaction.IsValidStatus(in.Status) {
+		return nil, status.Error(codes.InvalidArgument, "missing or invalid status")
+	}
+
+	data, err := s.TransactionRepo.FindOneBySignature(ctx, in.Signature)
+	if err != nil {
+		return nil, err
+	}
+
+	if data.Type != transaction.TOP_UP {
+		return nil, status.Error(codes.InvalidArgument, "this transaction is not topup transaction")
+	}
+
+	if err := transaction.CheckTransactionStatus(data.Status); err != nil {
+		return nil, err
+	}
+
+	if err := s.TransactionRepo.UpdateTransactionStatus(ctx, data.Id, in.Status); err != nil {
+		return nil, err
+	}
+
+	return &protobuf.Transaction{
+		Id:              data.Id,
+		UserId:          data.UserId,
+		Amount:          data.Amount,
+		Type:            data.Type,
+		Currency:        data.Currency,
+		Status:          in.Status,
+		TransactionDate: data.TransactionDate.String(),
+		Description:     data.Description,
+		Discount:        data.Discount,
+		Detail:          data.Detail,
+		CreatedAt:       data.CreatedAt.String(),
+		UpdatedAt:       data.UpdatedAt.String(),
+		Signature:       data.Signature,
+		ItemId:          data.ItemId,
+		Fee:             data.Fee,
 	}, nil
 }

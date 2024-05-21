@@ -33,13 +33,13 @@ func (r *TransactionRepoImpl) FindById(ctx context.Context, id string) (result T
 		fmt.Sprintf(`
 		SELECT 
 		id, userId, amount, type, currency, status, transactionDate, 
-		description, discount, detail, signature, itemId, createdAt, updatedAt 
+		description, discount, detail, signature, itemId, createdAt, updatedAt, fee
 		FROM %s 
 		WHERE id = $1`, cons.TRANSACTION),
 		id,
 	).Scan(
 		&result.Id, &result.UserId, &result.Amount, &result.Type, &result.Currency, &result.Status, &result.TransactionDate,
-		&result.Description, &result.Discount, &result.Detail, &result.Signature, &result.ItemId, &result.CreatedAt, &result.UpdatedAt,
+		&result.Description, &result.Discount, &result.Detail, &result.Signature, &result.ItemId, &result.CreatedAt, &result.UpdatedAt, &result.Fee,
 	); err != nil {
 		if err == sql.ErrNoRows {
 			err = h.NewAppError(codes.InvalidArgument, "data not found")
@@ -63,14 +63,14 @@ func (r *TransactionRepoImpl) FindOneBySignature(ctx context.Context, signature 
 		fmt.Sprintf(`
 		SELECT 
 		id, userId, amount, type, currency, status, transactionDate, 
-		description, discount, detail, signature, itemId, createdAt, updatedAt 
+		description, discount, detail, signature, itemId, createdAt, updatedAt, fee
 		FROM %s
 		WHERE signature = $1
 		`, cons.TRANSACTION),
 		signature,
 	).Scan(
 		&result.Id, &result.UserId, &result.Amount, &result.Type, &result.Currency, &result.Status, &result.TransactionDate,
-		&result.Description, &result.Discount, &result.Detail, &result.Signature, &result.ItemId, &result.CreatedAt, &result.UpdatedAt,
+		&result.Description, &result.Discount, &result.Detail, &result.Signature, &result.ItemId, &result.CreatedAt, &result.UpdatedAt, &result.Fee,
 	); err != nil {
 		if err == sql.ErrNoRows {
 			err = h.NewAppError(codes.InvalidArgument, "data not found")

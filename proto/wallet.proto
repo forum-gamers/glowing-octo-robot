@@ -17,4 +17,5 @@ message NoArgument{}
 
 service WalletService { 
   rpc CreateWallet(NoArgument) returns (Wallet) {}
+  rpc FindMyWallet(NoArgument) returns (Wallet) {}
 }
